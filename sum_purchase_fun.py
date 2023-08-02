@@ -77,6 +77,8 @@ def groupby_newold(purchase_detail,year_date):
     new_final_df['會員總數'] = new_final_df['線下'] + new_final_df['廣告'] + new_final_df['KOL']
     new_filter =  (new_final_df.月份新舊客戶 == '新客戶') & (new_final_df['日期年加月'].apply(lambda x: str(x)[0:4]) == year_date)
     new_df = new_final_df.loc[new_filter].reset_index(drop=True)
+    new_df.drop('月份新舊客戶', inplace=True, axis=1)
     old_filter =  (new_final_df.月份新舊客戶 == '舊客戶') & (new_final_df['日期年加月'].apply(lambda x: str(x)[0:4]) == year_date)
     old_df = new_final_df.loc[old_filter].reset_index(drop=True)
+    old_df.drop('月份新舊客戶', inplace=True, axis=1)
     return new_df,old_df
