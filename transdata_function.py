@@ -98,12 +98,12 @@ def makedf_with_product(purchase_product_detail,bill_product_detail3):
     df_old_sumbill = bill_oldmoney_filter.groupby(['日期年加月','分類']).agg({'單據數':sum}).reset_index()
     df_old_product = df_sumoldpeople.merge(df_old_sumbill,on=['日期年加月','分類'],how='inner')
     
-    df_product['ATV'] = (df_product['金額']/df_product['單據數']).astype('int')
-    df_product['ATV人'] = (df_product['金額']/df_product['人數']).astype('int')
-    df_new_product['ATV'] = (df_new_product['金額']/df_new_product['單據數']).astype('int')
-    df_new_product['ATV人'] = (df_new_product['金額']/df_new_product['人數']).astype('int')
-    df_old_product['ATV'] = (df_old_product['金額']/df_old_product['單據數']).astype('int')
-    df_old_product['ATV人'] = (df_old_product['金額']/df_old_product['人數']).astype('int')
+    df_product['ASP客單'] = (df_product['金額']/df_product['單據數']).astype('int')
+    df_product['ARPU人單'] = (df_product['金額']/df_product['人數']).astype('int')
+    df_new_product['ASP客單'] = (df_new_product['金額']/df_new_product['單據數']).astype('int')
+    df_new_product['ARPU人單'] = (df_new_product['金額']/df_new_product['人數']).astype('int')
+    df_old_product['ASP客單'] = (df_old_product['金額']/df_old_product['單據數']).astype('int')
+    df_old_product['ARPU人單'] = (df_old_product['金額']/df_old_product['人數']).astype('int')
     
     return df_product,df_new_product,df_old_product
 
@@ -203,12 +203,12 @@ def makedf_without_product(purchase_detail,bill_detail3):
     old_final_df = df_sumoldpeople.merge(df_sumoldmoney,on=['日期年加月'],how='inner')
     total_old_df = old_final_df.merge(df_old_sumbill,on=['日期年加月'],how='inner')
     
-    total_df['ATV'] = (total_df['金額']/total_df['單據數']).astype('int')
-    total_df['ATV人'] = (total_df['金額']/total_df['人數']).astype('int')
-    total_new_df['ATV'] = (total_new_df['金額']/total_new_df['單據數']).astype('int')
-    total_new_df['ATV人'] = (total_new_df['金額']/total_new_df['人數']).astype('int')
-    total_old_df['ATV'] = (total_old_df['金額']/total_old_df['單據數']).astype('int')
-    total_old_df['ATV人'] = (total_old_df['金額']/total_old_df['人數']).astype('int')
+    total_df['ASP客單'] = (total_df['金額']/total_df['單據數']).astype('int')
+    total_df['ARPU人單'] = (total_df['金額']/total_df['人數']).astype('int')
+    total_new_df['ASP客單'] = (total_new_df['金額']/total_new_df['單據數']).astype('int')
+    total_new_df['ARPU人單'] = (total_new_df['金額']/total_new_df['人數']).astype('int')
+    total_old_df['ASP客單'] = (total_old_df['金額']/total_old_df['單據數']).astype('int')
+    total_old_df['ARPU人單'] = (total_old_df['金額']/total_old_df['人數']).astype('int')
     
     return total_df,total_new_df,total_old_df
 
@@ -233,6 +233,7 @@ def newold_sep_product(df_new_product,df_old_product):
     for product in member_c.product:
         p_filter = (newold_p['分類'] == product)
         new_df = newold_p.loc[p_filter].reset_index(drop=True)
+        new_df.drop('分類', inplace=True, axis=1)
         product_newold.append(new_df)
     return product_newold
 
