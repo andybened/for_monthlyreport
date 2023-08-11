@@ -30,3 +30,14 @@ class for_member:
             new_map = year + "-" + i
             year_with_month.append(new_map)
         return year_with_month
+    def Repurchase_range(self,x): 
+        if x['月份新舊客戶'] == "新客戶":
+            return 'N(新客)'
+        elif x['date_diff'] <= 60:
+            return 'A(活耀客)' 
+        elif x['date_diff'] <= 120:
+            return 'S(沉睡)' 
+        elif x['date_diff'] <= 160:
+            return 'L(鬆動)'
+        elif x['date_diff'] > 160:
+            return 'D(封存客)'
