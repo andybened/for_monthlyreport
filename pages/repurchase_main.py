@@ -47,8 +47,8 @@ def main():
             
             @st.cache_data(show_spinner=False)
             def read_df3(Transaction_df,year):
-                cross_item_byperson2 = ci.Transaction_with_product(Transaction_df,product_df,year)
-                return cross_item_byperson2
+                cross_item_byperson2,cross_item_bytimes = ci.Transaction_with_product(Transaction_df,product_df,year)
+                return cross_item_byperson2,cross_item_bytimes
             
             ### 跨品項購買
             cross_item_byperson2,cross_item_bytimes = read_df3(Transaction_df,year)
