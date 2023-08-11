@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import setting as st
 import numpy as np
+from collections import Counter
 
 member_c = st.for_member()
 def Transaction_with_product(Transaction_df,product_df,year):
@@ -54,10 +55,10 @@ def Transaction_with_product(Transaction_df,product_df,year):
                                       ,on=['客戶廠商編號','日期年加月','分類'],how='inner')
     purchase_detail.rename(columns = {'單據號碼':'單據數'}, inplace = True)
     ###客戶groupby商品 去重複商品
+    
     cross_item_byperson2 = purchase_detail.groupby(['客戶廠商編號']).apply(lambda x:'-'.join(np.unique(x['分類']))).reset_index()
     cross_item_byperson2.rename(columns={0: "購買品項"}, inplace = True)
     cross_item_byperson2["購買清單"] = cross_item_byperson2["購買品項"].apply(lambda x: len(x.split("-")))
-    #c_test1 = purchase_detail.groupby('客戶廠商編號')['分類'].apply(lambda x: set(x) == {'好欣情','益菌寶'})
     def good_mood(df,value): #是否購買品項 
         if df["購買品項"].find(value) != -1: 
             return "Y" #有購買回傳1
@@ -65,7 +66,29 @@ def Transaction_with_product(Transaction_df,product_df,year):
             return "N" 
     for index,value in enumerate(member_c.product): 
         cross_item_byperson2[f"{value}"] = cross_item_byperson2.apply(good_mood, args=(value,),axis = 1) #args可以給function參數
-    return cross_item_byperson2
+
+    cross_item_bytimes = purchase_detail.groupby(['客戶廠商編號']).apply(lambda x:'-'.join((x['分類']))).reset_index()    
+    cross_item_bytimes.rename(columns={0: "購買品項"}, inplace = True)
+    #cross_item_bytimes["購買清單"] = cross_item_bytimes["購買品項"].apply(lambda x: len(x.split("-")))
+    def good_times(df,value): #是否購買品項 
+        count =df["購買品項"].count(value) #count抓出產品數量 
+        if count == 1:
+            return "1次"
+        elif count == 2:
+            return "2次"
+        elif count == 3:
+            return "3次"
+        elif count == 4:
+            return "4次"
+        elif count == 5:
+            return "5次"
+        elif count > 5 :
+            return "5次以上"
+
+    for index,value in enumerate(member_c.product): 
+        cross_item_bytimes[f"{value}"] = cross_item_bytimes.apply(good_times, args=(value,),axis = 1)
+        
+    return cross_item_byperson2,cross_item_bytimes
 
 def product_amount(cross_item_byperson2):
     one_product = {}
@@ -102,3 +125,24 @@ def product_amount(cross_item_byperson2):
     final_pd = pd.DataFrame.from_dict(multi_product)
     final_pd.index = new_index
     return final_pd,total_df
+   
+def product_repurchase(cross_item_bytimes):
+    product_list_df = []
+    for product in member_c.product:
+        cr_repurchase_df = cross_item_bytimes.groupby([f'{product}']).agg({'客戶廠商編號': len})
+        cr_repurchase_df.reset_index(inplace = True)
+        cr_repurchase_df.rename(columns={'客戶廠商編號': f'{product}',f'{product}': '重購次數'},inplace = True)
+        cr_repurchase_df.set_index("重購次數",inplace = True)
+        cr_repurchase_df.loc['總計'] = cr_repurchase_df[f'{product}'].sum(axis = 0)
+        product_list_df.append(cr_repurchase_df)   
+    #合併各產品
+    product_df = product_list_df[0]
+    for i in range(1,len(product_list_df)):
+        product_df = product_df.merge(product_list_df[i],on=['重購次數'],how='outer')
+    product_df.fillna(0,inplace = True)  
+    
+    #透過各產品總計 產生占比
+    percentage_df = (product_df / product_df.loc["總計"])
+    #percentage_df = percentage_df.applymap(format_percentage)
+    percentage_df = percentage_df.applymap(lambda x: format(x,'.1%')) 
+    return product_df,percentage_df

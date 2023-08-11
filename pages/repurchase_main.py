@@ -21,7 +21,7 @@ def main():
         #initial_sidebar_state="collapsed",
     )
     product_df = pd.read_csv("產品分類.csv",low_memory=False).dropna()
-    st.title('新客戶回購相關分析/跨品項分析')
+    st.title('新客戶回購相關分析/跨品項分析/品項重購分析')
     
     # 上傳資料集
     with st.form("my_form"):
@@ -49,11 +49,14 @@ def main():
             def read_df3(Transaction_df,year):
                 cross_item_byperson2 = ci.Transaction_with_product(Transaction_df,product_df,year)
                 return cross_item_byperson2
-            cross_item_byperson2 = read_df3(Transaction_df,year)
+            
+            ### 跨品項購買
+            cross_item_byperson2,cross_item_bytimes = read_df3(Transaction_df,year)
             final_pd,total_df = ci.product_amount(cross_item_byperson2)
-            #merge_df, sum_by_monthpeople = rf.get_new_first(purchase_detail,year)
-            #final_merge, merge_to_df2 = rf.newoldcustomer_data(purchase_detail,year,merge_df,sum_by_monthpeople)
-            tab1, tab2 = st.tabs(["新客回購", "跨品項購買"])
+            ### 品項重購
+            product_df,percentage_df = ci.product_repurchase(cross_item_bytimes)
+
+            tab1, tab2, tab3 = st.tabs(["新客回購", "跨品項購買", "品項重購"])
             with tab1:
                 st.subheader("新客回購大表")
                 st.dataframe(final_merge)
@@ -64,6 +67,11 @@ def main():
                 st.dataframe(total_df)
                 st.subheader("跨品數(by商品)")
                 st.dataframe(final_pd)      
+            with tab3:
+                st.subheader("品項重購數")
+                st.dataframe(product_df)
+                st.subheader("品項重購百分比")
+                st.dataframe(percentage_df) 
             
 if __name__ == '__main__':
     main()  
