@@ -7,6 +7,9 @@ Created on Fri Aug 11 11:15:32 2023
 import pandas as pd
 import numpy as np
 import setting as st
+from plotly.subplots import make_subplots
+import plotly.graph_objs as go
+import plotly.express as px
 
 member_c = st.for_member()
 def repurchase_df(Transaction_df):
@@ -82,4 +85,41 @@ def repurchase_df(Transaction_df):
     percentage_df = percentage_df.applymap(lambda x: format(x,'.1%'))
 
     return nalsd_pd,percentage_df
-# Transaction_df = pd.read_csv("2015-20230630_Transcationdata.csv",low_memory=False)
+
+def make_plot(nalsd_pd):
+#nalsd_pd2 = nalsd_pd.drop(nalsd_pd.index[-1])
+    nalsd_pd2 = nalsd_pd.reset_index()
+    nalsd_pd2 = nalsd_pd2.melt(id_vars='NASLD',var_name='Date',
+        value_name='value')
+    fig_customer = px.line(nalsd_pd2, x="Date", y="value", color='NASLD',markers=True)
+    fig_customer.update_yaxes(title_text="客戶數",tickformat=',.0f')
+    
+    percentage_df = (nalsd_pd / nalsd_pd.loc["總計"])
+    nalsd_percent = percentage_df.drop(percentage_df.index[-1])
+    nalsd_percent = nalsd_percent.reset_index()
+    nalsd_percent2 = nalsd_percent.melt(id_vars='NASLD',var_name='Date',
+        value_name='value')
+    fig_percent = px.line(nalsd_percent2, x="Date", y="value", color='NASLD' ,markers=True)   
+    fig_percent.update_yaxes(title_text="百分比",tickformat=',.1%')
+    
+    #fig_customer.update_xaxes(tickformat='%Y/%b')
+    fig_customer.update_layout(title={'text': "NASLD數量(by月)",
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top',},
+    title_font_family = "Times New Roman" ,
+    title_font_color = "red",  
+    title_font_size = 25,  
+    width=1500, height=600) # width=2000,Times New Roman
+    
+    fig_percent.update_layout(title={'text': "NASLD占比(by月)",
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top',},
+    title_font_family = "Times New Roman" ,
+    title_font_color = "red",  
+    title_font_size = 25,  
+    width=1500, height=600) # width=2000,Times New Roman
+    return fig_customer,fig_percent

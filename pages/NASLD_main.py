@@ -39,11 +39,18 @@ def main():
                 nalsd_pd,percentage_df = nf.repurchase_df(Transaction_df)
                 return nalsd_pd,percentage_df
             nalsd_pd,percentage_df = read_df2(Transaction_df)
+            fig_customer,fig_percent = nf.make_plot(nalsd_pd)
             
+        tab1, tab2 = st.tabs(["🗃數據", "📈圖表"])
+        with tab1:
             st.subheader("NASLD各月份數")
             st.dataframe(nalsd_pd)
             st.subheader("NASLD各月份占比")
             st.dataframe(percentage_df)
+        with tab2:
+            tab2.plotly_chart(fig_customer)
+            tab2.plotly_chart(fig_percent) #, theme=None
+            
             
 
 if __name__ == '__main__':
