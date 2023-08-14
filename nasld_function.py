@@ -29,10 +29,26 @@ def repurchase_df(Transaction_df):
                if ym[0:4] == yy:
                    member_filter =  (Transaction_df.會員分類 != '非會員') & (Transaction_df.日期年加月 <= ym)
                    ym_choose_df = Transaction_df.loc[member_filter].reset_index(drop=True)
-        
-                   first_buy = ym_choose_df.groupby("客戶廠商編號", as_index = False)['日期'].min()
+                   
+                   #新增判斷當月金額>0 start
+                   purchase_times = ym_choose_df.groupby(['客戶廠商編號','日期年加月']).客戶廠商編號.nunique()
+                   purchase_times = purchase_times.to_frame()
+                   purchase_times = purchase_times.rename(columns={"客戶廠商編號": "人數"})
+                   purchase_times = purchase_times.reset_index()
+                   # ### 客戶帶來的總額與件數by年+月
+                   purchase_sum = ym_choose_df.groupby(['客戶廠商編號','日期年加月']).agg({'金額': sum}) #'客戶代號':len
+                   purchase_sum = purchase_sum.reset_index()
+                   #### 合併總額數量與次數
+                   purchase_detail = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月'],how='inner')
+                   money_filter =  (purchase_detail.金額 > 0)
+                   purchase_detail = purchase_detail.loc[money_filter].reset_index(drop=True)
+                   ym_choose_df2 = ym_choose_df.merge(purchase_detail[['客戶廠商編號','日期年加月','人數']],on=['客戶廠商編號','日期年加月'],how='right')
+                   #test2 = ym_choose_df2.groupby(['客戶廠商編號','日期年加月']).agg({'金額': sum}) #'客戶代號':len
+                   #新增判斷當月金額>0 end 
+                   
+                   first_buy = ym_choose_df2.groupby("客戶廠商編號", as_index = False)['日期'].min() #ym_choose_df
                    first_buy.rename(columns = {'日期':'第一次購買日'}, inplace = True)
-                   last_buy = ym_choose_df.groupby("客戶廠商編號", as_index = False)['日期'].max()
+                   last_buy = ym_choose_df2.groupby("客戶廠商編號", as_index = False)['日期'].max() #ym_choose_df
                    last_buy.rename(columns = {'日期':'最後一次購買日'}, inplace = True)
                    first_last = first_buy.merge(last_buy,on=['客戶廠商編號'],how='inner')
                    first_last['第一次購買日期年加月'] = first_last['第一次購買日'].dt.strftime('%Y-%m')

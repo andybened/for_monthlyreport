@@ -26,7 +26,7 @@ def main():
     # 上傳資料集
     with st.form("my_form"):
         with st.sidebar:
-            uploaded_file = st.sidebar.file_uploader("請上傳您的檔案", type=["csv"]) #,accept_multiple_files=True
+            uploaded_file2 = st.sidebar.file_uploader("請上傳您的檔案", type=["csv"]) #,accept_multiple_files=True
             year = st.sidebar.text_input('輸入年分', '2023')
             submitted = st.form_submit_button("Submit")
     if submitted:
@@ -36,7 +36,7 @@ def main():
                 Transaction_dict = pd.read_csv(uploaded_file,low_memory= False)
                 return Transaction_dict #,product_df
             # 抓資料
-            Transaction_df = read_df(uploaded_file) #,product_df
+            Transaction_df = read_df(uploaded_file2) #,product_df
             @st.cache_data(show_spinner=False) ##不要顯示涵式名稱
             def read_df2(Transaction_df):
                 purchase_detail = rf.repurchase_df(Transaction_df)
