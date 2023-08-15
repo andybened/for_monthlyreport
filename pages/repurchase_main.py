@@ -39,11 +39,11 @@ def main():
             Transaction_df = read_df(uploaded_file2) #,product_df
             @st.cache_data(show_spinner=False) ##不要顯示涵式名稱
             def read_df2(Transaction_df):
-                purchase_detail = rf.repurchase_df(Transaction_df)
-                return purchase_detail
-            purchase_detail = read_df2(Transaction_df)
+                purchase_detail,purchase_detail2 = rf.repurchase_df(Transaction_df)
+                return purchase_detail,purchase_detail2
+            purchase_detail,purchase_detail2 = read_df2(Transaction_df)
             merge_df, sum_by_monthpeople = rf.get_new_first(purchase_detail,year)
-            final_merge, merge_to_df2 = rf.newoldcustomer_data(purchase_detail,year,merge_df,sum_by_monthpeople)
+            final_merge, merge_to_df2 = rf.newoldcustomer_data(purchase_detail,purchase_detail2,year,merge_df,sum_by_monthpeople)
             
             @st.cache_data(show_spinner=False)
             def read_df3(Transaction_df,year):

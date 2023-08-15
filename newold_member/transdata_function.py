@@ -42,6 +42,14 @@ def Transaction_with_product(Transaction_df,product_df):
     purchase_detail =  purchase_detail.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
     ,on=['客戶廠商編號'],how='inner')
     purchase_detail['月份新舊客戶'] = np.where((purchase_detail['日期年加月'] == purchase_detail['第一次購買年加月']), '新客戶', '舊客戶')
+    
+    #只抓金額
+    purchase_detail2 = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月','分類'],how='inner')
+    purchase_detail2 =  purchase_detail2.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
+    ,on=['客戶廠商編號'],how='inner')
+    purchase_detail2 =  purchase_detail2.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
+    ,on=['客戶廠商編號'],how='inner')
+    purchase_detail2['月份新舊客戶'] = np.where((purchase_detail2['日期年加月'] == purchase_detail2['第一次購買年加月']), '新客戶', '舊客戶')
     #抓單據 by月份
     #people_bill = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).單據號碼.nunique()
     people_bill = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).agg({'單據號碼': pd.Series.nunique
@@ -53,27 +61,43 @@ def Transaction_with_product(Transaction_df,product_df):
                                       ,on=['客戶廠商編號','日期年加月','分類'],how='inner')
     
     purchase_detail.rename(columns = {'單據號碼':'單據數'}, inplace = True)
-    return purchase_detail
+    return purchase_detail,purchase_detail2
 
-def makedf_with_product(purchase_product_detail):
+def makedf_with_product(purchase_product_detail,purchase_detail2):
     """人數(當月多次也只算1) 排掉客戶當月金額加總為負或是0
     最後會有 人數 金額總額 單據數"""
     df_product = purchase_product_detail.groupby(['日期年加月','分類']).agg(
-        {'人數':len,'金額':sum,'單據數':sum}).reset_index()
-    
+        {'人數':len,'單據數':sum}).reset_index()
+    df_product2 = purchase_detail2.groupby(['日期年加月','分類']).agg(
+        {'金額':sum}).reset_index()
+    df_product = df_product.merge(df_product2,on=['日期年加月','分類'],how='inner')
     ############### 新客 #######
     newmoney_filter =  (purchase_product_detail.月份新舊客戶 == '新客戶')
     df_newmoney_filter = purchase_product_detail.loc[newmoney_filter].reset_index(drop=True)
     # 人數+金額
     df_new_product = df_newmoney_filter.groupby(['日期年加月','分類']).agg(
-        {'人數':len,'金額':sum,'單據數':sum}).reset_index()
+        {'人數':len,'單據數':sum}).reset_index()
+    
+    newmoney_filter2 =  (purchase_detail2.月份新舊客戶 == '新客戶')
+    df_newmoney_filter2 = purchase_detail2.loc[newmoney_filter2].reset_index(drop=True)
+    # 人數+金額
+    df_new_product2 = df_newmoney_filter2.groupby(['日期年加月','分類']).agg(
+        {'金額':sum}).reset_index()
+    df_new_product = df_new_product.merge(df_new_product2,on=['日期年加月','分類'],how='inner')
     
     ############### 舊客 ####### 
     oldmoney_filter =  (purchase_product_detail.月份新舊客戶 == '舊客戶')
     df_oldmoney_filter = purchase_product_detail.loc[oldmoney_filter].reset_index(drop=True)
     # 人數+金額
     df_old_product = df_oldmoney_filter.groupby(['日期年加月','分類']).agg(
-        {'人數':len,'金額':sum,'單據數':sum}).reset_index()
+        {'人數':len,'單據數':sum}).reset_index()
+    
+    oldmoney_filter2 =  (purchase_detail2.月份新舊客戶 == '舊客戶')
+    df_oldmoney_filter2 = purchase_detail2.loc[oldmoney_filter2].reset_index(drop=True)
+    # 人數+金額
+    df_old_product2 = df_oldmoney_filter2.groupby(['日期年加月','分類']).agg(
+        {'金額':sum}).reset_index()
+    df_old_product = df_old_product.merge(df_old_product2,on=['日期年加月','分類'],how='inner')
     
     df_product['ASP客單'] = (df_product['金額']/df_product['單據數']).astype('int')
     df_product['ARPU人單'] = (df_product['金額']/df_product['人數']).astype('int')
@@ -120,7 +144,14 @@ def Transaction_without_product(Transaction_df):
     customer = purchase_detail.groupby(['客戶廠商編號'])
     purchase_detail['cumsum_times'] = customer['人數'].cumsum() #人數
     purchase_detail['cumsum_money'] = customer['金額'].cumsum() #總額
-    #purchase_detail['cumsum_count'] = customer['數量'].cumsum() #購買件數
+    #只抓金額
+    purchase_detail2 = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月'],how='inner')
+    purchase_detail2 =  purchase_detail2.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
+    ,on=['客戶廠商編號'],how='inner')
+    purchase_detail2 =  purchase_detail2.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
+    ,on=['客戶廠商編號'],how='inner')
+    purchase_detail2['月份新舊客戶'] = np.where((purchase_detail2['日期年加月'] == purchase_detail2['第一次購買年加月']), '新客戶', '舊客戶')
+    
     #抓單據 by月份
     #people_bill = Transaction_df.groupby(['客戶廠商編號','日期年加月']).單據號碼.nunique()
     people_bill = Transaction_df.groupby(['客戶廠商編號','日期年加月']).agg({'單據號碼': pd.Series.nunique
@@ -132,24 +163,32 @@ def Transaction_without_product(Transaction_df):
                                       ,on=['客戶廠商編號','日期年加月'],how='inner')
     
     purchase_detail.rename(columns = {'單據號碼':'單據數'}, inplace = True)
-    return purchase_detail
+    return purchase_detail,purchase_detail2
 
-def makedf_without_product(purchase_detail):
+def makedf_without_product(purchase_detail,purchase_detail2):
     """最後會有 人數 金額總額 單據數"""
-    
-    total_df = purchase_detail.groupby('日期年加月').agg({'人數':len,'金額':sum,'單據數':sum}
-                                ).reset_index()
+    total_df = purchase_detail.groupby('日期年加月').agg({'人數':len,'單據數':sum}).reset_index()
+    total_df2 = purchase_detail2.groupby(['日期年加月']).agg({'金額':sum}).reset_index()
+    total_df = total_df.merge(total_df2,on=['日期年加月'],how='inner')
     ############### 新客 #######
     newmoney_filter =  (purchase_detail.月份新舊客戶 == '新客戶')
     df_newmoney_filter = purchase_detail.loc[newmoney_filter].reset_index(drop=True)
-    total_new_df = df_newmoney_filter.groupby('日期年加月').agg({'人數':len,'金額':sum,'單據數':sum}
-                                ).reset_index()
+    total_new_df = df_newmoney_filter.groupby('日期年加月').agg({'人數':len,'單據數':sum}).reset_index()
+    
+    newmoney_filter2 =  (purchase_detail2.月份新舊客戶 == '新客戶')
+    df_newmoney_filter2 = purchase_detail2.loc[newmoney_filter2].reset_index(drop=True)
+    total_new_df2 = df_newmoney_filter2.groupby('日期年加月').agg({'金額':sum}).reset_index()
+    total_new_df = total_new_df.merge(total_new_df2,on=['日期年加月'],how='inner')
     ############### 舊客 ####### 
     oldmoney_filter =  (purchase_detail.月份新舊客戶 == '舊客戶')
     df_oldmoney_filter = purchase_detail.loc[oldmoney_filter].reset_index(drop=True)
-    total_old_df = df_oldmoney_filter.groupby('日期年加月').agg({'人數':len,'金額':sum,'單據數':sum}
-                                ).reset_index()
+    total_old_df = df_oldmoney_filter.groupby('日期年加月').agg({'人數':len,'單據數':sum}).reset_index()
     
+    oldmoney_filte2 =  (purchase_detail2.月份新舊客戶 == '舊客戶')
+    df_oldmoney_filter2 = purchase_detail2.loc[oldmoney_filte2].reset_index(drop=True)
+    total_old_df2 = df_oldmoney_filter2.groupby('日期年加月').agg({'金額':sum}).reset_index()
+    total_old_df = total_old_df.merge(total_old_df2,on=['日期年加月'],how='inner')
+                                                              
     total_df['ASP客單'] = (total_df['金額']/total_df['單據數']).astype('int')
     total_df['ARPU人單'] = (total_df['金額']/total_df['人數']).astype('int')
     total_new_df['ASP客單'] = (total_new_df['金額']/total_new_df['單據數']).astype('int')

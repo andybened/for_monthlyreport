@@ -30,6 +30,7 @@ def repurchase_df(Transaction_df):
     purchase_sum = purchase_sum.reset_index()
     #### 合併總額數量與次數
     purchase_detail = purchase_sum.merge(purchase_times_final,on=['客戶廠商編號','日期年加月'],how='inner')
+    purchase_detail2 = purchase_detail
     money_filter =  (purchase_detail.金額 > 0)
     purchase_detail = purchase_detail.loc[money_filter].reset_index(drop=True)
     #合併第一次、最後一次購買時間
@@ -71,7 +72,19 @@ def repurchase_df(Transaction_df):
     purchase_detail['最後一次購買年加月整數'] = purchase_detail['最後一次購買年加月'].apply(lambda x: int(x.replace("-",'')))
     purchase_detail['第一次購買年'] = purchase_detail['第一次購買年加月'].apply(lambda x: str(x)[0:4])
     #purchase_detail['客戶數'] = 1
-    return purchase_detail
+    
+    purchase_detail2 =  purchase_detail2.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
+    ,on=['客戶廠商編號'],how='inner')
+    purchase_detail2 =  purchase_detail2.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
+    ,on=['客戶廠商編號'],how='inner')
+    purchase_detail2['月份新舊客戶'] = np.where((purchase_detail2['日期年加月'] == purchase_detail2['第一次購買年加月']), '新客戶', '舊客戶')
+    purchase_detail2['日期年'] = purchase_detail2['日期年加月'].apply(lambda x: str(x)[0:4])
+    customer2 = purchase_detail2.groupby(['客戶廠商編號'])
+    purchase_detail2['cumsum_times'] = customer2['次數'].cumsum() #次數
+    purchase_detail2['cumsum_money'] = customer2['金額'].cumsum() #總額
+    purchase_detail2['回購分類'] = purchase_detail2.apply(cumsum_times,axis=1)
+    return purchase_detail ,purchase_detail2
+
 
 def get_new_first(purchase_detail,year):
     first_filter =  (purchase_detail['月份新舊客戶'] == '新客戶') & (purchase_detail['日期年'] == year)
@@ -83,8 +96,7 @@ def get_new_first(purchase_detail,year):
     for ym in year_month_list:
         newold_filter = (purchase_detail['日期年加月'] == ym)
         purchase_new_month = purchase_detail.loc[newold_filter].reset_index(drop=True)
-        sumbymonth_df = purchase_new_month.groupby(['日期年加月']).agg(
-            {'客戶廠商編號': len,'金額': sum,'單據號碼':sum}) #當月總數
+        sumbymonth_df = purchase_new_month.groupby(['日期年加月']).agg({'客戶廠商編號': len,'金額':sum,'單據號碼':sum}) #當月總數    
         sumbymonth_df.insert(0, '回購分類', '1總')
         sumbymonth_df = sumbymonth_df.reset_index()
         sumbymonth_df.set_index('回購分類', inplace = True)
@@ -102,14 +114,14 @@ def get_new_first(purchase_detail,year):
     #     sum_people_all = pd.concat([sum_people_all,sum_by_monthpeople[j].to_frame()],axis= 1)
     return merge_df,sum_by_monthpeople
 
-def newoldcustomer_data(purchase_detail,year,merge_df,sum_by_monthpeople):
+def newoldcustomer_data(purchase_detail,purchase_detail2,year,merge_df,sum_by_monthpeople):
     year_with_month = member_c.month_year(year)
     #sum_by_month2 = [] # 各月份新客df
     total_month = purchase_detail['日期年加月'].unique()
     even_numbers = [x for x in total_month if x[0:4] == year]
     even_numbers.sort()
     #ym = '2023-01'
-    #ym2 = '2023-01'
+    #ym2 = '2023-12'
     #將所有的新客戶資料抓出並逐月處理回購狀況 #982124861 來的次數與單據數不符
     sum_by_month_total = {} # 各月份、回購新客df
     purchase_object_cumsum_dict = {}
@@ -124,11 +136,24 @@ def newoldcustomer_data(purchase_detail,year,merge_df,sum_by_monthpeople):
                 if ym <= ym2: 
                     member_filter = (purchase_detail['客戶廠商編號'].isin(member)) & (purchase_detail['日期年加月'] <= ym2) #year_with_month[-1]
                     purchase_object = purchase_detail.loc[member_filter].reset_index(drop=True) #loc[~filter2] 非isin
+                    member_filter2 = (purchase_detail2['客戶廠商編號'].isin(member)) & (purchase_detail2['日期年加月'] <= ym2) #year_with_month[-1]
+                    purchase_money = purchase_detail2.loc[member_filter2].reset_index(drop=True) #loc[~filter2] 非isin
+                    
                     purchase_object2 = purchase_object.query("cumsum_times != 1").groupby(['客戶廠商編號']).agg({'回購分類':max
                                                         ,'cumsum_money':max,'cumsum_bill':max})
+                    
+                    purchase_money2 = purchase_money.query("cumsum_times != 1").groupby(['客戶廠商編號']).agg({'回購分類':max
+                                                        ,'cumsum_money':max})
+                    
                     purchase_object2.reset_index(inplace = True)
                     purchase_object2["月份"] = ym2 #"2022-01"
-                    purchase_object3 = purchase_object2.groupby(['月份','回購分類']).agg({'客戶廠商編號':len,'cumsum_money':sum,'cumsum_bill':sum})
+                    purchase_object3 = purchase_object2.groupby(['月份','回購分類']).agg({'客戶廠商編號':len,'cumsum_bill':sum})
+                    
+                    purchase_money2.reset_index(inplace = True)
+                    purchase_money2["月份"] = ym2 #"2022-01"
+                    purchase_money3 = purchase_money2.groupby(['月份','回購分類']).agg({'cumsum_money':sum})
+                    purchase_object3 = purchase_object3.merge(purchase_money3,on=['月份','回購分類'],how='inner')
+                    
                     purchase_object3.rename(columns = {'客戶廠商編號':f'{ym}人數','cumsum_money':f'{ym}金額'
                                          ,'cumsum_bill':f'{ym}單據數'}, inplace = True)
                     sum_by_month.append(purchase_object3)
