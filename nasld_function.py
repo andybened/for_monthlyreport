@@ -110,7 +110,7 @@ def repurchase_df(Transaction_df):
 
 #計算封存客跟新客
 def sleep_new_customer(nalsd_pd):
-    sleep_pd = nalsd_pd.iloc[:, 11:]
+    sleep_pd = nalsd_pd.iloc[:, :]
     column_list = sleep_pd.columns
     column_list = column_list.to_list()
     test_pd = pd.DataFrame()
