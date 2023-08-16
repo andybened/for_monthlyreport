@@ -22,7 +22,7 @@ def main():
         #initial_sidebar_state="collapsed",
     )
     product_df = pd.read_csv("產品分類.csv",low_memory=False).dropna()
-    st.title('NASLD分析')
+    st.title('NASLD分析/Nes活性指標')
     
     uploaded_file3 = st.sidebar.file_uploader("請上傳您的檔案", type=["csv"]) #,accept_multiple_files=True
     if uploaded_file3 is not None : #or st.session_state['btn_clicked']
@@ -36,9 +36,13 @@ def main():
         with st.spinner('Wait for it...'):
             @st.cache_data(show_spinner=False) #by月份數據
             def read_df2(Transaction_df):
-                nalsd_pd,percentage_df = nf.repurchase_df(Transaction_df)
-                return nalsd_pd,percentage_df
-            nalsd_pd,percentage_df = read_df2(Transaction_df)
+                nalsd_pd,percentage_df,awake_person_pd = nf.repurchase_df(Transaction_df)
+                return nalsd_pd,percentage_df,awake_person_pd
+            nalsd_pd,percentage_df,awake_person_pd = read_df2(Transaction_df)
+            sleep_customer = nf.sleep_new_customer(nalsd_pd)
+            final_nes = nf.concat_to_newpd(sleep_customer,awake_person_pd)
+            
+            #圖表區
             fig_customer,fig_percent = nf.make_plot(nalsd_pd)
             
         tab1, tab2 = st.tabs(["🗃數據", "📈圖表"])
@@ -47,6 +51,8 @@ def main():
             st.dataframe(nalsd_pd)
             st.subheader("NASLD各月份占比")
             st.dataframe(percentage_df)
+            st.subheader("Nes活性指標數據")
+            st.dataframe(final_nes)
         with tab2:
             tab2.plotly_chart(fig_customer)
             tab2.plotly_chart(fig_percent) #, theme=None

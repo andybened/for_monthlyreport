@@ -10,6 +10,7 @@ import setting as st
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
 import plotly.express as px
+from datetime import datetime
 
 member_c = st.for_member()
 def repurchase_df(Transaction_df):
@@ -25,9 +26,11 @@ def repurchase_df(Transaction_df):
     for_year = for_year.tolist()
     for_year.sort()
     #ym = "2022-04"
+    #yy = "2022"
     nalsd_list = []
+    for_repurchase = {}
     for yy in for_year:
-       if int(yy) >= 2022:
+       if int(yy) >= 2021:
            for ym in year_month: 
                if ym[0:4] == yy:
                    member_filter =  (Transaction_df.會員分類 != '非會員') & (Transaction_df.日期年加月 <= ym)
@@ -67,6 +70,11 @@ def repurchase_df(Transaction_df):
                    first_last['date_diff'] = first_last['日期卡點'] - first_last['最後一次購買日']
                    first_last['date_diff'] = first_last['date_diff'].dt.days
                    first_last['NASLD'] = first_last.apply(member_c.Repurchase_range,axis=1)
+                   ###將封存客的客戶ID存起來
+                   sleep_filter = (first_last["NASLD"] == "D(封存客)")
+                   sleep_pd = first_last.loc[sleep_filter].reset_index(drop=True)
+                   sleep_c = sleep_pd["客戶廠商編號"].to_list()
+                   for_repurchase[f"{ym}"] = sleep_c
                    
                    first_last_group = first_last.groupby(['NASLD']).agg({'客戶廠商編號': len})
                    first_last_group.rename(columns={'客戶廠商編號': f'{ym}'},inplace = True)
@@ -76,15 +84,62 @@ def repurchase_df(Transaction_df):
     nalsd_pd = nalsd_list[0]
     for i in range(1,len(nalsd_list)):
         nalsd_pd = nalsd_pd.merge(nalsd_list[i],on=['NASLD'],how='outer')
-    nalsd_pd.fillna(0,inplace = True)    
+    nalsd_pd.fillna(0,inplace = True)  
     list_nasld_sort = ["N(新客)","A(活耀客)","S(沉睡)","L(鬆動)","D(封存客)","總計"]
     nalsd_pd = nalsd_pd.reindex(list_nasld_sort)
     #透過各產品總計 產生占比
     percentage_df = (nalsd_pd / nalsd_pd.loc["總計"])
-    #percentage_df = percentage_df.applymap(format_percentage)
     percentage_df = percentage_df.applymap(lambda x: format(x,'.1%'))
+    
+    selected_keys = [key for key, value in for_repurchase.items() if key >= "2021-12"]
+    # 創建新的字典，僅包含key>=2021-12
+    selected_dict = {key: for_repurchase[key] for key in selected_keys}
+    #key = "2022-12"
+    #member_awake = selected_dict["2022-12"]
+    awake_person_pd = pd.DataFrame(index=["喚醒客"])
+    for key,values in selected_dict.items():
+        member_awake = values
+        date_object = datetime.strptime(key, '%Y-%m').date()
+        date_object = date_object + pd.DateOffset(months=1) #pandas內日期相加
+        next_month = date_object.strftime("%Y-%m")
+        repur_filter = (Transaction_df['客戶廠商編號'].isin(member_awake)) & (Transaction_df['日期年加月'] == next_month) #year_with_month[-1]
+        repur_nextmonth = Transaction_df.loc[repur_filter].reset_index(drop=True)
+        repur_cus = repur_nextmonth.groupby(['客戶廠商編號']).agg({'金額': sum})
+        awake_person_pd[f"{next_month}"] = [len(repur_cus)]
+    return nalsd_pd,percentage_df,awake_person_pd
 
-    return nalsd_pd,percentage_df
+#計算封存客跟新客
+def sleep_new_customer(nalsd_pd):
+    sleep_pd = nalsd_pd.iloc[:, 11:]
+    column_list = sleep_pd.columns
+    column_list = column_list.to_list()
+    test_pd = pd.DataFrame()
+    for i in range(1, len(column_list)):
+        col_name = f'{column_list[i]}'
+        test_pd[col_name] = sleep_pd.iloc[:, i] - sleep_pd.iloc[:, i-1]
+    sleep_customer = test_pd.loc["D(封存客)":]  #test_pd.iloc[4]
+    sleep_customer = sleep_customer.rename(index={'總計': '新客'})
+    return sleep_customer
+
+def concat_to_newpd(sleep_customer,awake_person_pd):
+    nes_pd = pd.concat([sleep_customer,awake_person_pd])
+    nes_pd.drop(nes_pd.columns[-1], axis=1, inplace=True)
+    
+    # 選擇特定的兩個行
+    water_rows = ['喚醒客', '新客']
+    selected_data = nes_pd.loc[water_rows]
+    # 計算活水
+    new_row = pd.DataFrame(selected_data.sum()).T
+    new_row.index = ['活水客']
+    final_pd = pd.concat([nes_pd, new_row])
+    
+    selected_rows = [ 'D(封存客)','活水客']
+    selected_data2 = final_pd.loc[selected_rows]
+    # 計算差異
+    new_row2 = pd.DataFrame(selected_data2.diff().iloc[-1]).T
+    new_row2.index = ['活水-封存']
+    final_pd = pd.concat([final_pd, new_row2])
+    return final_pd
 
 def make_plot(nalsd_pd):
 #nalsd_pd2 = nalsd_pd.drop(nalsd_pd.index[-1])
