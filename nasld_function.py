@@ -91,7 +91,7 @@ def repurchase_df(Transaction_df):
     percentage_df = (nalsd_pd / nalsd_pd.loc["總計"])
     percentage_df = percentage_df.applymap(lambda x: format(x,'.1%'))
     
-    selected_keys = [key for key, value in for_repurchase.items() if key >= "2021-12"]
+    selected_keys = [key for key, value in for_repurchase.items() if key >= "2021-01"]
     # 創建新的字典，僅包含key>=2021-12
     selected_dict = {key: for_repurchase[key] for key in selected_keys}
     #key = "2022-12"
