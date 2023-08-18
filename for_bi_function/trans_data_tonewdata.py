@@ -122,6 +122,38 @@ def Transaction_without_product(Transaction_df):
     purchase_detail.rename(columns = {'單據號碼':'單據數'}, inplace = True)
     return purchase_detail,purchase_detail2
 
+def makedf_without_product(purchase_detail,purchase_detail2):
+    """最後會有 人數 金額總額 單據數"""
+    total_df = purchase_detail.groupby('日期年加月').agg({'人數':len,'單據數':sum}).reset_index()
+    total_df2 = purchase_detail2.groupby(['日期年加月']).agg({'金額':sum}).reset_index()
+    total_df = total_df.merge(total_df2,on=['日期年加月'],how='inner')
+    ############### 新客 #######
+    newmoney_filter =  (purchase_detail.月份新舊客戶 == '新客戶')
+    df_newmoney_filter = purchase_detail.loc[newmoney_filter].reset_index(drop=True)
+    total_new_df = df_newmoney_filter.groupby('日期年加月').agg({'人數':len,'單據數':sum}).reset_index()
+    
+    newmoney_filter2 =  (purchase_detail2.月份新舊客戶 == '新客戶')
+    df_newmoney_filter2 = purchase_detail2.loc[newmoney_filter2].reset_index(drop=True)
+    total_new_df2 = df_newmoney_filter2.groupby('日期年加月').agg({'金額':sum}).reset_index()
+    total_new_df = total_new_df.merge(total_new_df2,on=['日期年加月'],how='inner')
+    ############### 舊客 ####### 
+    oldmoney_filter =  (purchase_detail.月份新舊客戶 == '舊客戶')
+    df_oldmoney_filter = purchase_detail.loc[oldmoney_filter].reset_index(drop=True)
+    total_old_df = df_oldmoney_filter.groupby('日期年加月').agg({'人數':len,'單據數':sum}).reset_index()
+    
+    oldmoney_filte2 =  (purchase_detail2.月份新舊客戶 == '舊客戶')
+    df_oldmoney_filter2 = purchase_detail2.loc[oldmoney_filte2].reset_index(drop=True)
+    total_old_df2 = df_oldmoney_filter2.groupby('日期年加月').agg({'金額':sum}).reset_index()
+    total_old_df = total_old_df.merge(total_old_df2,on=['日期年加月'],how='inner')
+                                                              
+    total_df['ASP客單'] = (total_df['金額']/total_df['單據數']).astype('int')
+    total_df['ARPU人單'] = (total_df['金額']/total_df['人數']).astype('int')
+    total_new_df['ASP客單'] = (total_new_df['金額']/total_new_df['單據數']).astype('int')
+    total_new_df['ARPU人單'] = (total_new_df['金額']/total_new_df['人數']).astype('int')
+    total_old_df['ASP客單'] = (total_old_df['金額']/total_old_df['單據數']).astype('int')
+    total_old_df['ARPU人單'] = (total_old_df['金額']/total_old_df['人數']).astype('int')
+    
+    return total_df,total_new_df,total_old_df
 
 def newold_forbi(purchase_product_detail,bill_product_detail3,  purchase_detail,purchase_detail2):
     df_product = purchase_product_detail.groupby(['日期年加月','分類','月份新舊客戶']).agg(

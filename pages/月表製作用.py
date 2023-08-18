@@ -38,8 +38,10 @@ def main():
                 purchase_product_detail,bill_product_detail3 = trans.Transaction_with_product(Transaction_df,product_df)
                 purchase_detail,purchase_detail2 = trans.Transaction_without_product(Transaction_df)
                 df_final,df_final2 = trans.newold_forbi(purchase_product_detail,bill_product_detail3,  purchase_detail,purchase_detail2)
-                return df_final,df_final2 
-            df_final,df_final2 = read_df2(Transaction_df) ###
+                total_df,total_new_df,total_old_df = trans.makedf_without_product(purchase_detail,purchase_detail2)
+                return df_final,total_df,total_new_df,total_old_df
+            df_final,total_df,total_new_df,total_old_df = read_df2(Transaction_df) ###
+            
             purchase_avgday_df ,sumbymonth_df = repur.repurchase_df(Transaction_df) ###
             cross_item_avgpro,cross_item_person = ci.Transaction_with_product(Transaction_df,product_df)###
             
@@ -48,12 +50,16 @@ def main():
             final_nes = nf.concat_to_newpd(sleep_customer,awake_person_pd) ###
             #圖表區
             st.subheader("新舊客戶相關數據")
-            col1, col2 = st.columns(2)
+            col1, col2,col2_1,col2_2 = st.columns(4)
             with col1:
                st.dataframe(df_final)
             with col2:   
-               st.dataframe(df_final2)
-            
+               st.dataframe(total_df)
+            with col2_1:   
+               st.dataframe(total_new_df)
+            with col2_2:   
+               st.dataframe(total_old_df)
+               
             st.subheader("回購相關數據")
             col3, col4 = st.columns(2)
             with col3:
