@@ -5,7 +5,7 @@ Created on Fri Aug 18 16:13:34 2023
 @author: User
 """
 from  for_bi_function import nasld_df as nf
-from  for_bi_function import Cross_item as ci
+#from  for_bi_function import Cross_item as ci
 from  for_bi_function import repurchase_v2 as repur
 from  for_bi_function import trans_data_tonewdata as trans
 import streamlit as st
@@ -32,18 +32,19 @@ def main():
         # 抓資料
         Transaction_df = read_df(uploaded_file3) #,product_df
     if uploaded_file3 is not None :
-        with st.spinner('Wait for it...'):
+        with st.spinner('資料處理中...'):
             @st.cache_data(show_spinner=False) #by月份數據
             def read_df2(Transaction_df):
                 purchase_product_detail,bill_product_detail3 = trans.Transaction_with_product(Transaction_df,product_df)
                 purchase_detail,purchase_detail2 = trans.Transaction_without_product(Transaction_df)
                 df_final,df_final2 = trans.newold_forbi(purchase_product_detail,bill_product_detail3,  purchase_detail,purchase_detail2)
                 total_df,total_new_df,total_old_df = trans.makedf_without_product(purchase_detail,purchase_detail2)
-                return df_final,total_df,total_new_df,total_old_df
-            df_final,total_df,total_new_df,total_old_df = read_df2(Transaction_df) ###
+                return purchase_product_detail,df_final,total_df,total_new_df,total_old_df
+            purchase_product_detail,df_final,total_df,total_new_df,total_old_df = read_df2(Transaction_df) ###
             
             purchase_avgday_df ,sumbymonth_df = repur.repurchase_df(Transaction_df) ###
-            cross_item_avgpro,cross_item_person = ci.Transaction_with_product(Transaction_df,product_df)###
+            cross_item_avgpro,cross_item_person = trans.cross_item(purchase_product_detail)###
+            #cross_item_avgpro,cross_item_person = ci.Transaction_with_product(Transaction_df,product_df)###
             
             nalsd_pd,percentage_df,awake_person_pd = nf.repurchase_df(Transaction_df)
             sleep_customer = nf.sleep_new_customer(nalsd_pd)

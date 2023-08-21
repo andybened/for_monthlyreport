@@ -8,6 +8,7 @@ Created on Wed Jul 26 10:34:30 2023
 import pandas as pd
 import numpy as np
 import setting as st    
+from collections import Counter
 member_c = st.for_member()   
 def Transaction_with_product(Transaction_df,product_df):
     # ### 客戶來的次數by年+月
@@ -43,7 +44,7 @@ def Transaction_with_product(Transaction_df,product_df):
     purchase_detail =  purchase_detail.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
     ,on=['客戶廠商編號'],how='inner')
     purchase_detail['月份新舊客戶'] = np.where((purchase_detail['日期年加月'] == purchase_detail['第一次購買年加月']), '新客戶', '舊客戶')
-    
+    purchase_detail['日期年'] = purchase_detail['日期年加月'].apply(lambda x: str(x)[0:4])
     #只抓金額
     purchase_detail2 = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月','分類'],how='inner')
     purchase_detail2 =  purchase_detail2.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
@@ -101,6 +102,7 @@ def Transaction_without_product(Transaction_df):
     customer = purchase_detail.groupby(['客戶廠商編號'])
     purchase_detail['cumsum_times'] = customer['人數'].cumsum() #人數
     purchase_detail['cumsum_money'] = customer['金額'].cumsum() #總額
+    purchase_detail['日期年'] = purchase_detail['日期年加月'].apply(lambda x: str(x)[0:4])
     #只抓金額
     purchase_detail2 = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月'],how='inner')
     purchase_detail2 =  purchase_detail2.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
@@ -169,13 +171,46 @@ def newold_forbi(purchase_product_detail,bill_product_detail3,  purchase_detail,
     df_final2 = df_noproduct.merge(df_noproduct2,on=['日期年加月','月份新舊客戶'],how='inner')
     return df_final,df_final2
 
-# Transaction_df = pd.read_csv("20150101-20230731_AA.csv",low_memory=False)
+def cross_item(purchase_product_detail):
+    cross_item_byperson2 = purchase_product_detail.groupby(['客戶廠商編號','日期年']).apply(lambda x:'-'.join(np.unique(x['分類']))).reset_index()
+    cross_item_byperson2.rename(columns={0: "購買品項"}, inplace = True)
+    cross_item_byperson2["購買清單"] = cross_item_byperson2["購買品項"].apply(lambda x: len(x.split("-")))
+    def good_mood(df,value): #是否購買品項 
+        if df["購買品項"].find(value) != -1: 
+            return "Y" #有購買回傳1
+        else:
+            return "N" 
+    for index,value in enumerate(member_c.product): 
+        cross_item_byperson2[f"{value}"] = cross_item_byperson2.apply(good_mood, args=(value,),axis = 1) #args可以給function參數
+
+    cross_item_avgpro = cross_item_byperson2.groupby('日期年').agg(avg_product=('購買清單', 'mean'))
+    cross_item_avgpro["avg_product"] = cross_item_avgpro["avg_product"].apply(lambda x: format(x,'.1f'))
+    
+    cross_item_person = cross_item_byperson2.groupby(['日期年','購買清單']).agg(customer_count=('客戶廠商編號', len))
+    cross_item_person = cross_item_person.reset_index()
+    def cumsum_times(x): 
+        if x['購買清單'] == 1:
+            return '1類'
+        elif x['購買清單'] == 2:
+            return '2類' 
+        elif x['購買清單'] == 3:
+            return '3類' 
+        elif x['購買清單'] == 4:
+            return '4類'
+        elif x['購買清單'] >= 5:
+            return '5類以上'
+    cross_item_person['回購分類'] = cross_item_person.apply(cumsum_times,axis=1)
+    return cross_item_avgpro,cross_item_person
+
+    
+
+# Transaction_df = pd.read_csv("2015~20230731_AA2.csv",low_memory=False)
 # product_df = pd.read_csv("產品分類.csv",low_memory=False).dropna()
-# purchase_product_detail,bill_product_detail3 = Transaction_with_product(Transaction_df,product_df)
-# purchase_detail,purchase_detail2 = Transaction_without_product(Transaction_df)
+#purchase_product_detail,bill_product_detail3 = Transaction_with_product(Transaction_df,product_df)
+#purchase_detail,purchase_detail2 = Transaction_without_product(Transaction_df)
 # df_final,df_final2 = newold_forbi(purchase_product_detail,bill_product_detail3,  purchase_detail,purchase_detail2)
 
-# df_final.to_excel('purchase_detail.xlsx',index = False)
+# Transaction_df.to_excel('Transaction_df.xlsx',index = False)
 # purchase_product_detail.to_excel('商品人數計算用.xlsx',index = False)
 
 # with pd.ExcelWriter('output.xlsx') as writer:  

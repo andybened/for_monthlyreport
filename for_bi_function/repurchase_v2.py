@@ -59,13 +59,14 @@ def repurchase_df(Transaction_df):
     #purchase_avgday_df = purchase_avgday.groupby(['日期年']).agg({'客戶廠商編號': len})
     purchase_avgday_df = purchase_avgday.groupby('日期年').agg(avg_days=('日期', 'mean'),
     customer_count=('客戶廠商編號', len))
+    purchase_avgday_df["avg_days"] = purchase_avgday_df["avg_days"].apply(lambda x: format(x,'.1f'))
     ####計算當年買家一次購
     sumbymonth_df = purchase_detail.groupby(['日期年','回購分類']).agg({'客戶廠商編號': len})  
     sumbymonth_df = sumbymonth_df.reset_index()
     return purchase_avgday_df ,sumbymonth_df
 
 member_c = st.for_member()
-# Transaction_df = pd.read_csv("20150101-20230731_AA.csv",low_memory=False)
+# Transaction_df = pd.read_csv("2015~20230731_AA2.csv",low_memory=False)
 # product_df = pd.read_csv("產品分類.csv",low_memory=False).dropna()
 # purchase_avgday_df ,sumbymonth_df = repurchase_df(Transaction_df)
 
