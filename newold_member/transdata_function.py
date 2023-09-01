@@ -20,6 +20,10 @@ def Transaction_with_product(Transaction_df,product_df):
     Transaction_df['日期年加月'] = Transaction_df['日期'].dt.strftime('%Y-%m')
     Transaction_df = Transaction_df.merge(product_df[['產品編號','分類']],on=['產品編號'],how='left')
     Transaction_df = Transaction_df[Transaction_df['分類'].isin(member_c.product)]
+    purchase_new = Transaction_df.groupby(['客戶廠商編號','日期年加月']).agg({'客戶廠商編號':pd.Series.nunique,
+        '金額': sum,'單據號碼':pd.Series.nunique}) #'客戶代號':len
+    purchase_new = purchase_new.rename(columns={"客戶廠商編號": "人數","單據號碼" : "單據數"})
+    purchase_new = purchase_new.reset_index()
     #抓人數 by月份
     purchase_times = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).客戶廠商編號.nunique()
     purchase_times = purchase_times.to_frame()
@@ -33,9 +37,9 @@ def Transaction_with_product(Transaction_df,product_df):
     money_filter =  (purchase_detail.金額 > 0)
     purchase_detail = purchase_detail.loc[money_filter].reset_index(drop=True)
     #合併第一次、最後一次購買時間
-    first_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
+    first_buy = purchase_new.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
     first_buy.rename(columns = {'日期年加月':'第一次購買年加月'}, inplace = True)
-    last_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
+    last_buy = purchase_new.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
     last_buy.rename(columns = {'日期年加月':'最後一次購買年加月'}, inplace = True)
     purchase_detail =  purchase_detail.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
     ,on=['客戶廠商編號'],how='inner')
