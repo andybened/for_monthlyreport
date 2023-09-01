@@ -33,9 +33,9 @@ def Transaction_with_product(Transaction_df,product_df):
     money_filter =  (purchase_detail.金額 > 0)
     purchase_detail = purchase_detail.loc[money_filter].reset_index(drop=True)
     #合併第一次、最後一次購買時間
-    first_buy = Transaction_df.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
+    first_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
     first_buy.rename(columns = {'日期年加月':'第一次購買年加月'}, inplace = True)
-    last_buy = Transaction_df.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
+    last_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
     last_buy.rename(columns = {'日期年加月':'最後一次購買年加月'}, inplace = True)
     purchase_detail =  purchase_detail.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
     ,on=['客戶廠商編號'],how='inner')
@@ -131,9 +131,9 @@ def Transaction_without_product(Transaction_df):
     money_filter =  (purchase_detail.金額 > 0)
     purchase_detail = purchase_detail.loc[money_filter].reset_index(drop=True)
     #合併第一次、最後一次購買時間
-    first_buy = Transaction_df.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
+    first_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
     first_buy.rename(columns = {'日期年加月':'第一次購買年加月'}, inplace = True)
-    last_buy = Transaction_df.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
+    last_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
     last_buy.rename(columns = {'日期年加月':'最後一次購買年加月'}, inplace = True)
     purchase_detail =  purchase_detail.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
     ,on=['客戶廠商編號'],how='inner')
