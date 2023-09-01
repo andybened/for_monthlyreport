@@ -41,12 +41,13 @@ def Transaction_with_product(Transaction_df,product_df):
     first_buy.rename(columns = {'日期年加月':'第一次購買年加月'}, inplace = True)
     last_buy = purchase_new.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
     last_buy.rename(columns = {'日期年加月':'最後一次購買年加月'}, inplace = True)
-    purchase_detail =  purchase_detail.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
+    purchase_new =  purchase_new.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
     ,on=['客戶廠商編號'],how='inner')
-    purchase_detail =  purchase_detail.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
+    purchase_new =  purchase_new.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
     ,on=['客戶廠商編號'],how='inner')
-    purchase_detail['月份新舊客戶'] = np.where((purchase_detail['日期年加月'] == purchase_detail['第一次購買年加月']), '新客戶', '舊客戶')
-    
+    purchase_new['月份新舊客戶'] = np.where((purchase_new['日期年加月'] == purchase_new['第一次購買年加月']), '新客戶', '舊客戶')
+    purchase_detail = purchase_detail.merge(purchase_new[['客戶廠商編號','日期年加月','月份新舊客戶']]
+                                      ,on=['客戶廠商編號','日期年加月'],how='inner')
     #只抓金額
     purchase_detail2 = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月','分類'],how='inner')
     purchase_detail2 =  purchase_detail2.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
