@@ -137,7 +137,7 @@ def concat_to_newpd(sleep_customer,awake_person_pd):
     return final_pd
 
 member_c = st.for_member()
-# Transaction_df = pd.read_csv("20150101-20230731_AA.csv",low_memory=False)
+# Transaction_df = pd.read_csv("2015~20230731_AA2.csv",low_memory=False)
 # nalsd_pd,percentage_df,awake_person_pd = repurchase_df(Transaction_df)
 # sleep_customer = sleep_new_customer(nalsd_pd)
 # final_nes = concat_to_newpd(sleep_customer,awake_person_pd)
