@@ -24,39 +24,58 @@ def Transaction_with_product(Transaction_df,product_df,year):
     Transaction_df = Transaction_df.merge(product_df[['產品編號','分類']],on=['產品編號'],how='left')
     Transaction_df = Transaction_df[Transaction_df['分類'].isin(member_c.product)]
     #抓人數 by月份
-    purchase_times = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).客戶廠商編號.nunique()
-    purchase_times = purchase_times.to_frame()
-    purchase_times = purchase_times.rename(columns={"客戶廠商編號": "人數"})
-    purchase_times = purchase_times.reset_index()
-    # ### 客戶帶來的總額與件數by年+月
-    purchase_sum = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).agg({'金額': sum}) #'客戶代號':len
-    purchase_sum = purchase_sum.reset_index()
-    #### 合併總額數量與次數
-    purchase_detail = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月','分類'],how='inner')
-    money_filter =  (purchase_detail.金額 > 0)
-    purchase_detail = purchase_detail.loc[money_filter].reset_index(drop=True)
-    #合併第一次、最後一次購買時間
-    first_buy = Transaction_df.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
-    first_buy.rename(columns = {'日期年加月':'第一次購買年加月'}, inplace = True)
-    last_buy = Transaction_df.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
-    last_buy.rename(columns = {'日期年加月':'最後一次購買年加月'}, inplace = True)
-    purchase_detail =  purchase_detail.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
-    ,on=['客戶廠商編號'],how='inner')
-    purchase_detail =  purchase_detail.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
-    ,on=['客戶廠商編號'],how='inner')
-    purchase_detail['月份新舊客戶'] = np.where((purchase_detail['日期年加月'] == purchase_detail['第一次購買年加月']), '新客戶', '舊客戶')
-    #抓單據 by月份
-    people_bill = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).agg({'單據號碼': pd.Series.nunique
-                                                ,'金額': sum})
-    people_bill = people_bill.reset_index()
-    people_bill_fil =  (people_bill.金額 > 0)
-    bill_detail = people_bill.loc[people_bill_fil].reset_index(drop=True)
-    purchase_detail = purchase_detail.merge(bill_detail[['客戶廠商編號','日期年加月','分類','單據號碼']]
-                                      ,on=['客戶廠商編號','日期年加月','分類'],how='inner')
-    purchase_detail.rename(columns = {'單據號碼':'單據數'}, inplace = True)
+    # purchase_times = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).客戶廠商編號.nunique()
+    # purchase_times = purchase_times.to_frame()
+    # purchase_times = purchase_times.rename(columns={"客戶廠商編號": "人數"})
+    # purchase_times = purchase_times.reset_index()
+    # # ### 客戶帶來的總額與件數by年+月
+    # purchase_sum = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).agg({'金額': sum}) #'客戶代號':len
+    # purchase_sum = purchase_sum.reset_index()
+    # #### 合併總額數量與次數
+    # purchase_detail = purchase_sum.merge(purchase_times,on=['客戶廠商編號','日期年加月','分類'],how='inner')
+    # money_filter =  (purchase_detail.金額 > 0)
+    # purchase_detail = purchase_detail.loc[money_filter].reset_index(drop=True)
+    # #合併第一次、最後一次購買時間
+    # first_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].min()
+    # first_buy.rename(columns = {'日期年加月':'第一次購買年加月'}, inplace = True)
+    # last_buy = purchase_detail.groupby("客戶廠商編號", as_index = False)['日期年加月'].max()
+    # last_buy.rename(columns = {'日期年加月':'最後一次購買年加月'}, inplace = True)
+    # purchase_detail =  purchase_detail.merge(first_buy[['客戶廠商編號','第一次購買年加月']]
+    # ,on=['客戶廠商編號'],how='inner')
+    # purchase_detail =  purchase_detail.merge(last_buy[['客戶廠商編號','最後一次購買年加月']]
+    # ,on=['客戶廠商編號'],how='inner')
+    # purchase_detail['月份新舊客戶'] = np.where((purchase_detail['日期年加月'] == purchase_detail['第一次購買年加月']), '新客戶', '舊客戶')
+    # #抓單據 by月份
+    # people_bill = Transaction_df.groupby(['客戶廠商編號','日期年加月','分類']).agg({'單據號碼': pd.Series.nunique
+    #                                             ,'金額': sum})
+    # people_bill = people_bill.reset_index()
+    # people_bill_fil =  (people_bill.金額 > 0)
+    # bill_detail = people_bill.loc[people_bill_fil].reset_index(drop=True)
+    # purchase_detail = purchase_detail.merge(bill_detail[['客戶廠商編號','日期年加月','分類','單據號碼']]
+    #                                   ,on=['客戶廠商編號','日期年加月','分類'],how='inner')
+    # purchase_detail.rename(columns = {'單據號碼':'單據數'}, inplace = True)
     ###客戶groupby商品 去重複商品
+    people_bill = Transaction_df.groupby(['客戶廠商編號','單據號碼','分類','日期年加月']).agg({'單據號碼': pd.Series.nunique,'金額': sum})
+    def change_neg(x):
+        if x['金額'] == 0:
+            return 0
+        elif x['金額'] < 0:
+            return -x['單據號碼']
+        elif x['金額'] > 0:
+            return x['單據號碼'] 
+    people_bill['單據數'] = people_bill.apply(change_neg,axis = 1)
+    people_bill.drop('單據號碼', inplace=True, axis=1)
+    people_bill = people_bill.reset_index()
+    people_bill_filter =  (people_bill.金額 > 0)
+    bill_detail = people_bill.loc[people_bill_filter].reset_index(drop=True)
     
-    cross_item_byperson2 = purchase_detail.groupby(['客戶廠商編號']).apply(lambda x:'-'.join(np.unique(x['分類']))).reset_index()
+    # people_bill_final = people_bill.groupby(['客戶廠商編號','日期年加月','分類']).agg({'客戶廠商編號':pd.Series.nunique
+    #                                                                  ,'單據數': sum,'金額': sum})
+    # people_bill_final = people_bill_final.rename(columns={"客戶廠商編號": "人數"})
+    # people_bill_final = people_bill_final.reset_index()
+    
+    
+    cross_item_byperson2 = bill_detail.groupby(['客戶廠商編號']).apply(lambda x:'-'.join(np.unique(x['分類']))).reset_index()
     cross_item_byperson2.rename(columns={0: "購買品項"}, inplace = True)
     cross_item_byperson2["購買清單"] = cross_item_byperson2["購買品項"].apply(lambda x: len(x.split("-")))
     def good_mood(df,value): #是否購買品項 
@@ -67,7 +86,7 @@ def Transaction_with_product(Transaction_df,product_df,year):
     for index,value in enumerate(member_c.product): 
         cross_item_byperson2[f"{value}"] = cross_item_byperson2.apply(good_mood, args=(value,),axis = 1) #args可以給function參數
 
-    cross_item_bytimes = purchase_detail.groupby(['客戶廠商編號']).apply(lambda x:'-'.join((x['分類']))).reset_index()    
+    cross_item_bytimes = bill_detail.groupby(['客戶廠商編號']).apply(lambda x:'-'.join((x['分類']))).reset_index()    
     cross_item_bytimes.rename(columns={0: "購買品項"}, inplace = True)
     #cross_item_bytimes["購買清單"] = cross_item_bytimes["購買品項"].apply(lambda x: len(x.split("-")))
     def good_times(df,value): #是否購買品項 

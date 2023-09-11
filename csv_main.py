@@ -36,15 +36,15 @@ def main():
         with st.spinner('Wait for it...'):
             @st.cache_data(show_spinner=False) #by月份數據
             def read_df2(Transaction_df):
-                purchase_detail,purchase_detail2 = tf.Transaction_without_product(Transaction_df)
-                total_df,total_new_df,total_old_df = tf.makedf_without_product(purchase_detail,purchase_detail2)
+                people_bill_final = tf.Transaction_without_product(Transaction_df)
+                total_df,total_new_df,total_old_df = tf.makedf_without_product(people_bill_final)
                 return total_df,total_new_df,total_old_df
             total_df,total_new_df,total_old_df = read_df2(Transaction_df)
                 
             @st.cache_data(show_spinner=False) # by商品數據
             def read_df3(Transaction_df,product_df):    
-                purchase_product_detail,purchase_detail2 = tf.Transaction_with_product(Transaction_df,product_df)
-                df_product,df_new_product,df_old_product = tf.makedf_with_product(purchase_product_detail,purchase_detail2)
+                product_bill_final = tf.Transaction_with_product(Transaction_df,product_df)
+                df_product,df_new_product,df_old_product = tf.makedf_with_product(product_bill_final)
                 return df_product,df_new_product,df_old_product
             df_product,df_new_product,df_old_product =  read_df3(Transaction_df,product_df)
             
