@@ -35,15 +35,15 @@ def main():
         with st.spinner('資料處理中...'):
             @st.cache_data(show_spinner=False) #by月份數據
             def read_df2(Transaction_df):
-                purchase_product_detail,bill_product_detail3 = trans.Transaction_with_product(Transaction_df,product_df)
-                purchase_detail,purchase_detail2 = trans.Transaction_without_product(Transaction_df)
-                df_final,df_final2 = trans.newold_forbi(purchase_product_detail,bill_product_detail3,  purchase_detail,purchase_detail2)
-                total_df,total_new_df,total_old_df = trans.makedf_without_product(purchase_detail,purchase_detail2)
-                return purchase_product_detail,df_final,total_df,total_new_df,total_old_df
-            purchase_product_detail,df_final,total_df,total_new_df,total_old_df = read_df2(Transaction_df) ###
+                product_bill_final = trans.Transaction_with_product(Transaction_df,product_df)
+                people_bill_final = trans.Transaction_without_product(Transaction_df)
+                df_final = trans.newold_forbi(product_bill_final)
+                total_df,total_new_df,total_old_df = trans.makedf_without_product(people_bill_final)
+                return product_bill_final,df_final,total_df,total_new_df,total_old_df
+            product_bill_final,df_final,total_df,total_new_df,total_old_df = read_df2(Transaction_df) ###
             
             purchase_avgday_df ,sumbymonth_df = repur.repurchase_df(Transaction_df) ###
-            cross_item_avgpro,cross_item_person = trans.cross_item(purchase_product_detail)###
+            cross_item_avgpro,cross_item_person = trans.cross_item(product_bill_final)###
             #cross_item_avgpro,cross_item_person = ci.Transaction_with_product(Transaction_df,product_df)###
             
             nalsd_pd,percentage_df,awake_person_pd = nf.repurchase_df(Transaction_df)
