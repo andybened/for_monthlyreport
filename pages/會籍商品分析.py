@@ -50,7 +50,7 @@ def for_product():
             #     total_old_df.to_excel(writer, index = False, sheet_name='舊客人數')
             #     #writer.close()
             # ste.download_button('下載excel檔',data = buffer,file_name='表格下載.xlsx')         
-            st.subheader("各月分資料by會籍、商品")    
+            st.subheader("年度會籍資料by商品")    
             tab_all = st.tabs(mem.member_c.product)        
             with tab_all[0]: # 好欣情
                 st.dataframe(final_list['好欣情'])

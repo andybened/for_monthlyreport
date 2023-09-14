@@ -20,7 +20,7 @@ def for_member():
         #initial_sidebar_state="collapsed",
     )
     product_df = pd.read_csv("產品分類.csv",low_memory=False).dropna()
-    st.title('會籍搭配產品別相關分析')
+    st.title('會員會籍分析')
     
     with st.form("my_form"):
         with st.sidebar:
