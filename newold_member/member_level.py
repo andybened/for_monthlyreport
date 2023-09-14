@@ -42,7 +42,7 @@ def Transaction_with_product(Transaction_df,product_df):
 
     return product_bill_final
 
-def makedf_with_product(product_bill_final):
+def makedf_with_product(product_bill_final): #要用另一個檔案
     """合併人數、訂單數、金額"""
     product_bill_final['日期年'] = product_bill_final['日期年加月'].apply(lambda x: x[0:4])
     final_list = {}
@@ -57,6 +57,7 @@ def makedf_with_product(product_bill_final):
         newmoney_filter =  (product_bill_final.分類 == product)
         people_bill_type = product_bill_final.loc[newmoney_filter].reset_index(drop=True)
         people_sum = people_bill_type.query("金額 > 0").groupby(['日期年','會員分類']).agg({'客戶廠商編號': pd.Series.nunique})
+        #people_sum = people_bill_type.groupby(['日期年','會員分類']).agg({'客戶廠商編號': pd.Series.nunique})
         bill_sum = people_bill_type.groupby(['日期年','會員分類']).agg({'單據數': sum})
         money_sum = people_bill_type.groupby(['日期年','會員分類']).agg({'金額': sum})
         total_df = people_sum.merge(bill_sum,on=['日期年','會員分類'],how='inner')
@@ -126,6 +127,8 @@ def makedf_without_product(people_bill_final):
 
 def repurchase_nowyear(people_bill_final): #只能先看2022以後是否前年有購買(忠誠客)
     people_bill_final['日期年'] = people_bill_final['日期年加月'].apply(lambda x: x[0:4])
+    max_time = people_bill_final['日期年加月'].max()
+    
     # people_bill_final['2021購買'] = np.where((people_bill_final['日期年'] == '2021'), 'Y', 'N')
     # people_bill_final['2022購買'] = np.where((people_bill_final['日期年'] == '2022'), 'Y', 'N')
     # people_bill_final['2023購買'] = np.where((people_bill_final['日期年'] == '2023'), 'Y', 'N')
@@ -153,11 +156,12 @@ def repurchase_nowyear(people_bill_final): #只能先看2022以後是否前年�
             total_df = total_df.reset_index()
             total_df['ASP客單'] = (total_df['金額']/total_df['單據數']).astype('int')
             total_df['ARPU人單'] = (total_df['金額']/total_df['人數']).astype('int')
+            total_df.iloc[3:, :1] = max_time[0:4] + '/01~' + max_time[4:]
             member_final_pd[f'{value}'] = total_df
     
     return member_final_pd
 
-
+# Transaction_df = pd.read_csv("2022_202308_AA.csv",low_memory=False)
 # Transaction_df = pd.read_csv("202101-202308每月交易資料.csv",low_memory=False)
 # product_df = pd.read_csv("產品分類.csv",low_memory=False).dropna()
 # #member_level_df = pd.read_csv("會籍專用.csv",low_memory=False).dropna()
@@ -166,5 +170,4 @@ def repurchase_nowyear(people_bill_final): #只能先看2022以後是否前年�
 # people_bill_final = Transaction_without_product(Transaction_df)
 # normal_df,platinum_df,VIP_df= makedf_without_product(people_bill_final)
 # member_final_pd = repurchase_nowyear(people_bill_final)
-
 
