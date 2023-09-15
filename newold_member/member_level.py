@@ -45,6 +45,7 @@ def Transaction_with_product(Transaction_df,product_df):
 def makedf_with_product(product_bill_final): #要用另一個檔案
     """合併人數、訂單數、金額"""
     product_bill_final['日期年'] = product_bill_final['日期年加月'].apply(lambda x: x[0:4])
+    max_time = product_bill_final['日期年加月'].max()
     final_list = {}
     #new_old_list = ['總','一般會員','白金會員','尊爵會員']
     for product in member_c.product:
@@ -66,6 +67,7 @@ def makedf_with_product(product_bill_final): #要用另一個檔案
         total_df = total_df.rename(columns={"客戶廠商編號": "人數"})
         total_df['ASP客單'] = (total_df['金額']/total_df['單據數']).astype('int')
         total_df['ARPU人單'] = (total_df['金額']/total_df['人數']).astype('int')
+        total_df.iloc[3:, :1] = max_time[0:4] + '/01~' + max_time[4:]
         final_list[f'{product}'] = total_df    
     
     return final_list
@@ -127,8 +129,6 @@ def makedf_without_product(people_bill_final):
 
 def repurchase_nowyear(people_bill_final): #只能先看2022以後是否前年有購買(忠誠客)
     people_bill_final['日期年'] = people_bill_final['日期年加月'].apply(lambda x: x[0:4])
-    max_time = people_bill_final['日期年加月'].max()
-    
     # people_bill_final['2021購買'] = np.where((people_bill_final['日期年'] == '2021'), 'Y', 'N')
     # people_bill_final['2022購買'] = np.where((people_bill_final['日期年'] == '2022'), 'Y', 'N')
     # people_bill_final['2023購買'] = np.where((people_bill_final['日期年'] == '2023'), 'Y', 'N')
@@ -156,7 +156,6 @@ def repurchase_nowyear(people_bill_final): #只能先看2022以後是否前年�
             total_df = total_df.reset_index()
             total_df['ASP客單'] = (total_df['金額']/total_df['單據數']).astype('int')
             total_df['ARPU人單'] = (total_df['金額']/total_df['人數']).astype('int')
-            total_df.iloc[3:, :1] = max_time[0:4] + '/01~' + max_time[4:]
             member_final_pd[f'{value}'] = total_df
     
     return member_final_pd
